@@ -1,7 +1,7 @@
 import { supabase } from './supabase.js';
 
 let isProcessing = false; 
-const scannedTokens = new Set(); // 💡 중복 스캔 방지용: 처리 완료된 QR의 '사번_시간'을 기억하는 바구니
+const scannedTokens = new Set(); // 중복 스캔 방지 바구니
 
 document.addEventListener("DOMContentLoaded", () => {
     const html5QrcodeScanner = new Html5QrcodeScanner(
@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     html5QrcodeScanner.render(onScanSuccess, onScanError);
 });
 
-// 💡 삐 소리(효과음)를 만들어내는 함수 (외부 파일 필요 없음)
+// 효과음 함수
 function playBeep(isSuccess) {
     try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -24,29 +24,27 @@ function playBeep(isSuccess) {
         gainNode.connect(ctx.destination);
         
         if (isSuccess) {
-            // 성공: 경쾌하고 높은 삑! 소리
             osc.type = 'sine';
             osc.frequency.setValueAtTime(880, ctx.currentTime); 
             gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
             osc.start();
-            osc.stop(ctx.currentTime + 0.15); // 0.15초 재생
+            osc.stop(ctx.currentTime + 0.15); 
         } else {
-            // 실패: 낮고 둔탁한 띡- 소리
             osc.type = 'square';
             osc.frequency.setValueAtTime(300, ctx.currentTime); 
             gainNode.gain.setValueAtTime(0.05, ctx.currentTime);
             osc.start();
-            osc.stop(ctx.currentTime + 0.3); // 0.3초 재생
+            osc.stop(ctx.currentTime + 0.3); 
         }
     } catch (error) {
         console.warn("오디오 지원 안됨");
     }
 }
 
-// 💡 스마트폰 진동 함수
+// 진동 함수
 function triggerVibration() {
     if (navigator.vibrate) {
-        navigator.vibrate(200); // 0.2초 동안 징~ 울림 (모바일 전용)
+        navigator.vibrate(200); 
     }
 }
 
@@ -57,7 +55,6 @@ async function onScanSuccess(decodedText, decodedResult) {
 
     const msgBox = document.getElementById('resultMessage');
     
-    // 시각 효과: 처리 중일 때 노란색 배경
     document.body.style.transition = "background-color 0.3s";
     document.body.style.backgroundColor = "#fff9e6";
     msgBox.innerText = "데이터 확인 중...";
@@ -73,53 +70,83 @@ async function onScanSuccess(decodedText, decodedResult) {
         const drinkName = qrData.d;
         const qrTime = qrData.t;
 
-        // 💡 1. 중복 스캔 완벽 방지
-        const uniqueToken = `${userId}_${qrTime}`; // 예: "15-501206_171092301293"
-        if (scannedTokens.has(uniqueToken)) {
-            throw new Error("이미 스캔된 QR입니다. (중복 인식)");
-        }
-
-        // 2. 시간 검증 (30초 만료)
+        // 1. 중복 및 시간 검증
+        const uniqueToken = `${userId}_${qrTime}`; 
+        if (scannedTokens.has(uniqueToken)) throw new Error("이미 처리된 QR코드입니다. (중복)");
+        
         const currentTime = new Date().getTime();
-        if (currentTime - qrTime > 30000) { 
-            throw new Error("유효시간(30초)이 지난 QR코드입니다.");
+        if (currentTime - qrTime > 30000) throw new Error("유효시간(30초)이 지난 QR코드입니다.");
+
+        // --- 💡 [순서 1] DB 읽기 및 조건 검증 ---
+        
+        // 직원 데이터 가져오기 (띄어쓰기 없앰!)
+        const { data: empData, error: empReadErr } = await supabase
+            .from('employees')
+            .select('총주문량, 주문가능량')
+            .eq('아이디', userId)
+            .single();
+            
+        if (empReadErr) throw new Error("직원 정보 조회 실패");
+
+        let currentAvailable = empData.주문가능량 || 0; 
+        let currentTotal = empData.총주문량 || 0;
+
+        if (currentAvailable < 1) {
+            throw new Error(`${userName}님은 더 이상 주문할 수 없습니다. (가능량 소진)`);
         }
 
-        // 3. DB 통신 (data_stack 삽입 -> employees 갱신 -> drink 갱신)
-        const { error: insertErr } = await supabase.from('data_stack').insert([{ 성명: userName, 생년월일: userBirth, 아이디: userId, 주문음료: drinkName }]);
+        // 음료 데이터 가져오기
+        const { data: drinkData, error: drinkReadErr } = await supabase
+            .from('drink')
+            .select('잔여수량')
+            .eq('음료선택', drinkName)
+            .single();
+            
+        if (drinkReadErr) throw new Error("음료 재고 조회 실패");
+
+        let currentRemain = drinkData.잔여수량 || 0;
+        if (currentRemain < 1) {
+            throw new Error(`${drinkName} 재고가 0개입니다!`);
+        }
+
+        // --- 💡 [순서 2] DB 쓰기 및 수정 (실행) ---
+
+        const { error: insertErr } = await supabase
+            .from('data_stack')
+            .insert([{ 성명: userName, 생년월일: userBirth, 아이디: userId, 주문음료: drinkName }]);
         if (insertErr) throw new Error("데이터 저장 실패");
 
-        const { data: empData } = await supabase.from('employees').select('총주문량').eq('아이디', userId).single();
-        await supabase.from('employees').update({ 총주문량: (empData?.총주문량 || 0) + 1 }).eq('아이디', userId);
+        const { error: empUpdateErr } = await supabase
+            .from('employees')
+            .update({ 총주문량: currentTotal + 1, 주문가능량: currentAvailable - 1 })
+            .eq('아이디', userId);
+        if (empUpdateErr) throw new Error("직원 수량 갱신 실패");
 
-        const { data: drinkData } = await supabase.from('drink').select('잔여수량').eq('음료선택', drinkName).single();
-        if ((drinkData?.잔여수량 || 0) <= 0) throw new Error(`${drinkName} 재고 부족!`);
-        await supabase.from('drink').update({ 잔여수량: drinkData.잔여수량 - 1 }).eq('음료선택', drinkName);
+        const { error: drinkUpdateErr } = await supabase
+            .from('drink')
+            .update({ 잔여수량: currentRemain - 1 })
+            .eq('음료선택', drinkName);
+        if (drinkUpdateErr) throw new Error("음료 재고 갱신 실패");
 
         // 💡 성공 처리 완료
-        scannedTokens.add(uniqueToken); // 바구니에 토큰 저장 (다음 번엔 막힘)
-        playBeep(true);        // 삑! 소리
-        triggerVibration();    // 징~ 진동
+        scannedTokens.add(uniqueToken); 
+        playBeep(true);        
+        triggerVibration();    
 
-        msgBox.innerText = `✅ [성공] ${userName}님\n${drinkName} 주문 완료`;
+        msgBox.innerText = `✅ [성공] ${userName}님\n${drinkName} 주문 완료 (남은수량: ${currentAvailable - 1}개)`;
         msgBox.style.color = "#155724"; 
-        
-        // 시각 효과: 화면 전체 배경을 초록색으로 3초간 변경
         document.body.style.backgroundColor = "#d4edda"; 
 
     } catch (error) {
         // 💡 실패 처리 완료
-        playBeep(false);       // 띡- 에러음
-        triggerVibration();    // 징~ 진동
+        playBeep(false);       
+        triggerVibration();    
 
         msgBox.innerText = `❌ [거절] ${error.message}`;
         msgBox.style.color = "#721c24"; 
-        
-        // 시각 효과: 화면 전체 배경을 빨간색으로 3초간 변경
         document.body.style.backgroundColor = "#f8d7da";
     }
 
-    // 💡 3초 뒤에 원래의 하얀 화면으로 원상복구 및 다음 스캔 준비
     setTimeout(() => {
         document.body.style.backgroundColor = "#ffffff";
         msgBox.innerText = "스캔 대기 중...";
@@ -128,9 +155,7 @@ async function onScanSuccess(decodedText, decodedResult) {
     }, 3000);
 }
 
-function onScanError(errorMessage) {
-    // 백그라운드 노이즈는 무시
-}
+function onScanError(errorMessage) {}
 
 document.getElementById('logoutBtn').addEventListener('click', () => {
     localStorage.clear();

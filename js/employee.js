@@ -16,7 +16,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
     document.getElementById('displayName').innerText = userName;
-
+    const { data: myData, error: myError } = await supabase
+        .from('employees')
+        .select('주문가능량')
+        .eq('아이디', userId)
+        .single();
+    
+    if (myData) {
+        document.getElementById('myAvailableCount').innerText = myData.주문가능량;
+    }
     // 2. Supabase에서 'drink' 테이블 데이터 가져와서 목록 만들기
     const { data: drinks, error } = await supabase.from('drink').select('*');
     if (error) {
