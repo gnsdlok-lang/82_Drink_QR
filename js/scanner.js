@@ -147,3 +147,7 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
     localStorage.clear();
     window.location.href = 'index.html';
 });
+// 메인 화면으로 돌아가기
+document.getElementById('backBtn').addEventListener('click', () => {
+    window.location.href = 'admin-main.html';
+});
