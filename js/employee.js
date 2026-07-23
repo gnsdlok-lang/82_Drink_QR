@@ -79,14 +79,18 @@ function makeDynamicQR(drinkName) {
         d: drinkName,                         // 주문음료 (Drink)
         t: new Date().getTime()               // 생성시간 (Time)
     };
-
-    // 정보를 텍스트(JSON)로 변환
+// 정보를 텍스트(JSON)로 변환
     const qrString = encodeURIComponent(JSON.stringify(qrData));
+
+   
+    const qrContainer = document.getElementById('qrContainer');
+    qrContainer.innerHTML = '<canvas id="qrCanvas"></canvas>'; 
+
 
     // 새로운 QRious 라이브러리로 그리기
     new QRious({
-        element: document.getElementById('qrCanvas'),
-        value: qrString, // 이제 한글이 깨지지 않는 안전한 텍스트가 들어갑니다
+        element: document.getElementById('qrCanvas'), 
+        value: qrString, 
         size: 200,
         level: 'L'
     });
