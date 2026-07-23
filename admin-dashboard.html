@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>관리자 대시보드 (주문 내역)</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="dashboard-box" style="max-width: 800px; margin: 0 auto; padding: 20px;">
+        <h2>📊 실시간 주문(출입) 현황</h2>
+        
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>주문 시간</th>
+                    <th>성명</th>
+                    <th>아이디(사번)</th>
+                    <th>생년월일</th>
+                    <th>선택 음료</th>
+                </tr>
+            </thead>
+            <!-- 자바스크립트가 데이터를 채워넣을 빈 공간 -->
+            <tbody id="dataTableBody">
+                <tr>
+                    <td colspan="5" style="text-align: center;">데이터를 불러오는 중입니다...</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <br>
+        <button id="logoutBtn">로그아웃</button>
+    </div>
+
+    <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>

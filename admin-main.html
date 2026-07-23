@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>관리자 메인 화면</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 관리자 화면은 조금 더 넓고 쾌적하게 구성 -->
+    <div class="admin-box" style="max-width: 400px; margin: 50px auto; padding: 30px; text-align: center; border: 1px solid #ccc; border-radius: 10px; background-color: #f8f9fa;">
+        
+        <h2 style="color: #333;"><span id="adminName"></span> 관리자님,<br>환영합니다.</h2>
+        <p style="color: #666; margin-bottom: 30px;">원하시는 업무를 선택해 주세요.</p>
+        
+        <!-- 메뉴 버튼들 -->
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <button id="btnScanner" style="padding: 15px; font-size: 16px; background-color: #007bff;">
+                📸 QR 스캐너 실행
+            </button>
+            
+            <button id="btnDashboard" style="padding: 15px; font-size: 16px; background-color: #28a745;">
+                📊 실시간 주문 현황 (대시보드)
+            </button>
+        </div>
+        
+        <br><br>
+        <button id="logoutBtn" style="background-color: #dc3545;">로그아웃</button>
+    </div>
+
+    <script type="module" src="js/admin-main.js"></script>
+</body>
+</html>

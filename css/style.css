@@ -1,0 +1,25 @@
+/* 대시보드 표(Table) 디자인 */
+.data-table {
+    width: 100%;
+    border-collapse: collapse; /* 테두리 겹침 방지 */
+    margin-top: 15px;
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.data-table th, .data-table td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: center;
+}
+
+.data-table th {
+    background-color: #f4f7f6;
+    color: #333;
+    font-weight: bold;
+}
+
+/* 마우스를 올렸을 때 행 배경색 살짝 변경 */
+.data-table tbody tr:hover {
+    background-color: #f9f9f9; 
+}

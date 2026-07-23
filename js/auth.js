@@ -35,12 +35,12 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
     localStorage.setItem('userBirth', data.생년월일);
     // 2. 권한(3열: int2)에 따라 라우팅
     // 권한이 1(관리자)이라고 가정, 2(직원)이라고 가정
-    if (data.권한 === 1) {
-        // 일단 지금은 관리자도 qr 발급 화면으로 보내거나 다른 알림창을 띄워둡니다.
-        // window.location.href = 'admin-scanner.html'; 
-        alert("관리자 계정입니다. 스캐너 화면으로 이동해야 하지만 임시로 QR 화면으로 이동합니다.");
-        window.location.href = 'employee-qr.html';
+    // js/auth.js 의 맨 아랫부분 수정
+    if (data.권한 == 1) { // 숫자 1이 관리자라고 가정
+        // 수정됨: 관리자 메인 화면으로 이동
+        window.location.href = 'admin-main.html'; 
     } else {
+        // 직원은 그대로 QR 화면으로 이동
         window.location.href = 'employee-qr.html';
     }
 });
