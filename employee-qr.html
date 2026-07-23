@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>음료 QR 발급</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- QR 생성을 위한 외부 자바스크립트 도구 불러오기 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+</head>
+<body>
+    <div class="qr-box">
+        <h2><span id="displayName">000</span>님 환영합니다</h2>
+        
+        <!-- 음료 선택 영역 -->
+        <div style="margin: 20px 0;">
+            <label>음료 선택: </label>
+            <select id="drinkSelect">
+                <option value="">-- 음료를 고르세요 --</option>
+            </select>
+            <p>잔여 수량: <strong id="remainCount">-</strong>개</p>
+        </div>
+
+        <button id="generateBtn">QR 코드 생성</button>
+
+        <!-- QR 코드와 타이머가 표시될 영역 -->
+        <div id="qrContainer" style="margin: 20px auto; width: 200px; height: 200px; display: flex; justify-content: center; align-items: center; border: 1px solid #ccc;">
+            [음료를 선택하고 버튼을 누르세요]
+        </div>
+        <p id="timerText" style="color: red; font-weight: bold; text-align: center;"></p>
+
+        <br>
+        <button id="logoutBtn">로그아웃</button>
+    </div>
+
+    <!-- 기능 연결 -->
+    <script type="module" src="js/employee.js"></script>
+</body>
+</html>
