@@ -81,19 +81,16 @@ function makeDynamicQR(drinkName) {
     };
 
     // 정보를 텍스트(JSON)로 변환
-    const qrString = JSON.stringify(qrData);
-
-    // 기존 화면에 있던 옛날 QR 지우고 새 캔버스(도화지) 깔기
-    const qrContainer = document.getElementById('qrContainer');
-    qrContainer.innerHTML = '<canvas id="qrCanvas"></canvas>'; 
+    const qrString = encodeURIComponent(JSON.stringify(qrData));
 
     // 새로운 QRious 라이브러리로 그리기
     new QRious({
         element: document.getElementById('qrCanvas'),
-        value: qrString,
+        value: qrString, // 이제 한글이 깨지지 않는 안전한 텍스트가 들어갑니다
         size: 200,
-        level: 'L' // L(Low): 데이터가 많을 때 점들을 덜 빽빽하게 만들어 인식률을 높임
+        level: 'L'
     });
+
 
     // 30초 카운트다운 화면에 보여주기
     let timeLeft = 30;

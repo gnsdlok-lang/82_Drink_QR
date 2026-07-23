@@ -10,19 +10,22 @@ document.addEventListener("DOMContentLoaded", () => {
     html5QrcodeScanner.render(onScanSuccess, onScanError);
 });
 
-// QR 코드를 성공적으로 읽었을 때 실행되는 함수
+
 async function onScanSuccess(decodedText, decodedResult) {
-    // 1. 중복 인식 방지 (한 번 찍히면 처리 끝날 때까지 무시)
     if (isProcessing) return;
     isProcessing = true; 
 
     const msgBox = document.getElementById('resultMessage');
     msgBox.innerText = "처리 중입니다...";
-    msgBox.style.color = "#ff9800"; // 주황색
+    msgBox.style.color = "#ff9800"; 
 
     try {
-        // 2. QR 데이터 해독 (아까 다이어트했던 알파벳 키 복구)
-        const qrData = JSON.parse(decodedText);
+        // (기존) const qrData = JSON.parse(decodedText);
+        
+        // 👇 아래처럼 해독(decodeURIComponent) 과정을 먼저 거치도록 수정해 주세요!
+        const decodedString = decodeURIComponent(decodedText);
+        const qrData = JSON.parse(decodedString);
+        
         const userName = qrData.n;
         const userBirth = qrData.b;
         const userId = qrData.i;
