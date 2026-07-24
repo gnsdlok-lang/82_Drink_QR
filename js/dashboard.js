@@ -1,8 +1,7 @@
 import { supabase } from './supabase.js';
 
 document.addEventListener("DOMContentLoaded", async () => {
-    // 1. 관리자 권한 확인 (localStorage에 저장된 권한이 1인지 확인)
-    // 주의: 문자열 '1'로 저장되어 있을 수 있으니 Number로 변환해서 비교하거나 == 를 사용합니다.
+    // 1. 관리자 권한 확인
     const userRole = localStorage.getItem('userRole');
     if (userRole != 1) {
         alert("관리자만 접근할 수 있는 페이지입니다.");
@@ -10,14 +9,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    // 2. Supabase에서 data_stack 데이터 가져오기 (가장 최근 데이터가 위에 오도록 정렬)
-    // created_at은 Supabase가 자동으로 기록하는 생성 시간 컬럼입니다.
+    // 2. Supabase에서 data_stack 데이터 가져오기 
     const { data, error } = await supabase
         .from('data_stack')
         .select('*')
         .order('created_at', { ascending: false });
 
     const tbody = document.getElementById('dataTableBody');
+    if (!tbody) return; // 테이블 영역이 없으면 에러 방지
+
     tbody.innerHTML = ""; // '불러오는 중...' 글자 지우기
 
     if (error) {
@@ -35,7 +35,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     data.forEach(row => {
         const tr = document.createElement('tr');
 
-        // 시간을 보기 좋게 포맷팅 (예: 2026. 7. 23. 오후 11:34)
         const dateObj = new Date(row.created_at);
         const timeString = dateObj.toLocaleString('ko-KR'); 
 
@@ -51,17 +50,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 });
 
-// 로그아웃 로직
-document.getElementById('logoutBtn').addEventListener('click', () => {
-    localStorage.clear();
-    window.location.href = 'index.html';
-});
-// 메인 화면으로 돌아가기
-document.getElementById('backBtn').addEventListener('click', () => {
-    window.location.href = 'admin-main.html';
-});
+// 버튼 이벤트 (안전장치 추가)
+const logoutBtn = document.getElementById('logoutBtn');
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+        localStorage.clear();
+        window.location.href = 'index.html';
+    });
+}
+
+const backBtn = document.getElementById('backBtn');
+if (backBtn) {
+    backBtn.addEventListener('click', () => {
+        window.location.href = 'admin-main.html';
+    });
+}
+
 // =========================================================================
-// [안드로이드 기기 뒤로가기 버튼 방어 로직] - 충돌 없도록 수정
+// [안드로이드 기기 뒤로가기 버튼 방어 로직]
 // =========================================================================
 history.pushState(null, null, location.href);
 let backPressedOnce = false;
@@ -91,10 +97,6 @@ window.addEventListener('popstate', (event) => {
         } else {
             backPressedOnce = false;
             history.pushState(null, null, location.href);
-        }
-    }
-});
-            window.history.pushState(null, null, window.location.href);
         }
     }
 });
