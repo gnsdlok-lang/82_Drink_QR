@@ -61,55 +61,39 @@ document.getElementById('backBtn').addEventListener('click', () => {
     window.location.href = 'admin-main.html';
 });
 // =========================================================================
-// [안드로이드 기기 뒤로가기 버튼 방어 및 더블 탭 종료 로직]
+// [안드로이드 기기 뒤로가기 버튼 방어 로직] - 충돌 없도록 수정
 // =========================================================================
-
-// 1. 페이지가 켜지자마자 가짜 히스토리를 하나 밀어넣어서 뒤로가기를 막을 준비를 합니다.
-window.history.pushState(null, null, window.location.href);
-
+history.pushState(null, null, location.href);
 let backPressedOnce = false;
 
-window.addEventListener('popstate', function(event) {
+window.addEventListener('popstate', (event) => {
     if (!backPressedOnce) {
-        // 첫 번째 뒤로가기 누름
         backPressedOnce = true;
+        history.pushState(null, null, location.href);
         
-        // 다시 가짜 히스토리를 밀어넣어서 뒤로 안가게 한 번 더 막음
-        window.history.pushState(null, null, window.location.href);
-
-        // 안드로이드 토스트(안내문) 띄우기
         const toast = document.createElement('div');
-        toast.innerText = "뒤로가기를 한 번 더 누르면 종료됩니다.";
+        toast.innerText = "종료하시려면 뒤로가기를 한 번 더 누르세요.";
         toast.style.cssText = `
-            position: fixed; 
-            bottom: 50px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            background: rgba(0, 0, 0, 0.7); 
-            color: white; 
-            padding: 12px 24px; 
-            border-radius: 20px; 
-            font-size: 14px; 
-            z-index: 9999;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 10px 20px;
+            border-radius: 20px; font-size: 14px; z-index: 9999;
         `;
         document.body.appendChild(toast);
         
-        // 2초 뒤에 '한 번 누름' 상태와 토스트 메시지 초기화
         setTimeout(() => {
             backPressedOnce = false;
-            if (document.body.contains(toast)) toast.remove();
+            if (toast.parentNode) toast.parentNode.removeChild(toast);
         }, 2000);
-
     } else {
-        // 2초 안에 두 번째 뒤로가기 누름 -> 종료 의사 확인
-        if (confirm("종료(로그아웃) 하시겠습니까?")) {
-            // 확인 시: 데이터 지우고 첫 화면으로
+        if (confirm("로그아웃 하시겠습니까?")) {
             localStorage.clear();
-            window.location.href = 'index.html';
+            window.location.replace('index.html');
         } else {
-            // 취소 시: 다시 뒤로가기 방어태세 돌입
             backPressedOnce = false;
+            history.pushState(null, null, location.href);
+        }
+    }
+});
             window.history.pushState(null, null, window.location.href);
         }
     }
