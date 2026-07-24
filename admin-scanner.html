@@ -5,24 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>관리자 QR 스캐너</title>
     <link rel="stylesheet" href="css/style.css">
-    <!-- QR 스캔을 위한 외부 카메라 라이브러리 -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body>
     <div class="scanner-box">
         <h2>음료 제공 스캐너</h2>
         
-        <!-- 👇 새롭게 추가된 좌우 반전 버튼 -->
+        <!-- 좌우 반전 버튼 -->
         <div style="text-align: center; margin-bottom: 15px;">
             <button id="flipCameraBtn" style="padding: 10px 20px; font-size: 16px; background-color: #343a40; color: white; border-radius: 8px; border: none; font-weight: bold; cursor: pointer;">
                 ↔️ 좌우 반전 (거울 모드)
             </button>
         </div>
 
-        <!-- 카메라 영상이 출력될 박스 -->
+        <!-- 카메라 화면 -->
         <div id="reader" style="width: 100%; max-width: 400px; margin: 0 auto; overflow: hidden;"></div>
 
-        <!-- 스캔 결과 메시지가 뜰 공간 -->
+        <!-- 결과 메시지 -->
         <div style="margin-top: 20px; padding: 15px; background-color: #f0f8ff; border-radius: 8px;">
             <h3 id="resultMessage" style="color: #0056b3; margin: 0;">스캔 대기 중...</h3>
         </div>
