@@ -1,14 +1,55 @@
 import { supabase } from './supabase.js';
 
 let isProcessing = false; 
-const scannedTokens = new Set(); // 중복 스캔 방지용
+const scannedTokens = new Set(); // 중복 스캔 방지 바구니
+
+//  카메라 제어를 위한 변수 추가
+let html5QrCode; 
+let currentFacingMode = "environment"; // 기본값: 후면 카메라 (environment = 후면, user = 전면)
 
 document.addEventListener("DOMContentLoaded", () => {
-    const html5QrcodeScanner = new Html5QrcodeScanner(
-        "reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false
-    );
-    html5QrcodeScanner.render(onScanSuccess, onScanError);
+    // 자동 스캐너 대신 수동 제어 엔진(Html5Qrcode) 사용
+    html5QrCode = new Html5Qrcode("reader");
+    startCamera(); // 카메라 켜기 함수 실행
 });
+
+// 카메라를 켜는 함수
+function startCamera() {
+    // 브라우저에 "연속 오토포커스를 최대한 사용해줘!" 라고 요청하는 설정
+    const cameraConfig = { 
+        fps: 10, 
+        qrbox: { width: 250, height: 250 },
+        videoConstraints: {
+            advanced: [{ focusMode: "continuous" }]
+        }
+    };
+
+    html5QrCode.start(
+        { facingMode: currentFacingMode }, // 전면 or 후면
+        cameraConfig,
+        onScanSuccess, // 기존에 만들어둔 성공 함수 연결
+        onScanError
+    ).catch((err) => {
+        console.error("카메라 시작 에러:", err);
+        alert("카메라 권한을 허용하시거나 다른 브라우저를 사용해주세요.");
+    });
+}
+
+// 전환 버튼을 눌렀을 때 실행되는 로직
+const switchBtn = document.getElementById('switchCameraBtn');
+if (switchBtn) {
+    switchBtn.addEventListener('click', async () => {
+        if (html5QrCode && html5QrCode.isScanning) {
+            await html5QrCode.stop(); // 켜져있는 카메라 끄기
+        }
+        
+        // 방향 뒤집기 (후면이면 전면으로, 전면이면 후면으로)
+        currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
+        
+        // 바뀐 방향으로 다시 켜기
+        startCamera(); 
+    });
+}
 
 // 효과음 함수
 function playBeep(isSuccess) {
