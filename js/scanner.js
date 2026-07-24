@@ -2,17 +2,16 @@ import { supabase } from './supabase.js';
 
 let isProcessing = false; 
 const scannedTokens = new Set();
-let isFlipped = false; // 💡 거울 모드 상태 기억
+let isFlipped = false; 
 
 document.addEventListener("DOMContentLoaded", () => {
-    // 💡 가장 안정적이었던 이전 자동 스캐너 모드로 복구
     const html5QrcodeScanner = new Html5QrcodeScanner(
         "reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false
     );
     html5QrcodeScanner.render(onScanSuccess, onScanError);
 });
 
-// 💡 좌우 반전(거울 모드) 기능 (화면만 뒤집기)
+// 좌우 반전(거울 모드) 기능
 const flipBtn = document.getElementById('flipCameraBtn');
 if (flipBtn) {
     flipBtn.addEventListener('click', () => {
@@ -60,14 +59,13 @@ async function onScanSuccess(decodedText, decodedResult) {
     msgBox.style.color = "#ff9800"; 
 
     try {
-        const decodedString = decodeURIComponent(decodedText);
-        const qrData = JSON.parse(decodedString);
+        // 🔥 1. 초경량 QR코드 해독 로직 (구분자로 쪼개기)
+        const parts = decodedText.split('|');
+        if (parts.length !== 3) throw new Error("유효하지 않은 QR 코드 형식입니다.");
         
-        const userName = qrData.n;
-        const userBirth = qrData.b;
-        const userId = qrData.i;
-        const drinkName = qrData.d;
-        const qrTime = qrData.t;
+        const userId = parts[0];
+        const drinkNumber = parts[1];
+        const qrTime = parseInt(parts[2], 10);
 
         const uniqueToken = `${userId}_${qrTime}`; 
         if (scannedTokens.has(uniqueToken)) throw new Error("이미 처리된 QR코드입니다. (중복)");
@@ -75,31 +73,37 @@ async function onScanSuccess(decodedText, decodedResult) {
         const currentTime = new Date().getTime();
         if (currentTime - qrTime > 30000) throw new Error("유효시간(30초)이 지난 QR코드입니다.");
 
+        // 🔥 2. 직원 정보 확인 (QR에 없던 이름과 생년월일을 여기서 가져옵니다!)
         const { data: empData, error: empReadErr } = await supabase
             .from('employees')
-            .select('총주문량, 주문가능량')
+            .select('성명, 생년월일, 총주문량, 주문가능량')
             .eq('아이디', userId)
             .single();
             
-        if (empReadErr) throw new Error("직원 정보 조회 실패");
+        if (empReadErr) throw new Error("등록되지 않은 직원입니다.");
 
+        const userName = empData.성명;
+        const userBirth = empData.생년월일;
         const currentAvailable = Number(empData.주문가능량 || 0); 
         const currentTotal = Number(empData.총주문량 || 0);
 
         if (currentAvailable < 1) throw new Error(`${userName}님은 주문가능량이 없습니다.`);
 
+        // 🔥 3. 음료 정보 확인 (문자가 아닌 number 로 조회)
         const { data: drinkData, error: drinkReadErr } = await supabase
             .from('drink')
-            .select('잔여수량')
-            .eq('음료선택', drinkName)
+            .select('음료선택, 잔여수량')
+            .eq('number', drinkNumber) 
             .single();
             
-        if (drinkReadErr) throw new Error("음료 재고 조회 실패");
+        if (drinkReadErr) throw new Error("존재하지 않는 음료 번호입니다.");
 
+        const drinkName = drinkData.음료선택;
         const currentRemain = Number(drinkData.잔여수량 || 0);
 
         if (currentRemain < 1) throw new Error(`${drinkName} 재고가 없습니다!`);
 
+        // --- 4. DB에 3연속 업데이트 ---
         const { error: insertErr } = await supabase.from('data_stack').insert([
             { 성명: userName, 생년월일: userBirth, 아이디: userId, 주문음료: drinkName }
         ]);
@@ -113,9 +117,10 @@ async function onScanSuccess(decodedText, decodedResult) {
 
         const { error: drinkUpdateErr } = await supabase.from('drink').update({ 
             '잔여수량': currentRemain - 1 
-        }).eq('음료선택', drinkName);
+        }).eq('number', drinkNumber); // 문자 대신 번호로 정확하게 업데이트
         if (drinkUpdateErr) throw new Error("음료 재고 수정 실패");
 
+        // 성공 처리
         scannedTokens.add(uniqueToken); 
         playBeep(true);        
         triggerVibration();    
@@ -142,7 +147,6 @@ async function onScanSuccess(decodedText, decodedResult) {
 
 function onScanError(errorMessage) {}
 
-// HTML 버튼 이벤트 (오류 없이 안전하게 연결)
 const logoutBtn = document.getElementById('logoutBtn');
 if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
@@ -158,9 +162,6 @@ if (backBtn) {
     });
 }
 
-// =========================================================================
-// [안드로이드 기기 뒤로가기 버튼 방어 로직] - 충돌 없도록 수정
-// =========================================================================
 history.pushState(null, null, location.href);
 let backPressedOnce = false;
 
