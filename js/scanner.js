@@ -192,3 +192,58 @@ document.getElementById('logoutBtn').addEventListener('click', () => {[cite: 1]
 document.getElementById('backBtn').addEventListener('click', () => {[cite: 1]
     window.location.href = 'admin-main.html';[cite: 1]
 });[cite: 1]
+
+// =========================================================================
+// [안드로이드 기기 뒤로가기 버튼 방어 및 더블 탭 종료 로직]
+// =========================================================================
+
+// 1. 페이지가 켜지자마자 가짜 히스토리를 하나 밀어넣어서 뒤로가기를 막을 준비를 합니다.
+window.history.pushState(null, null, window.location.href);
+
+let backPressedOnce = false;
+
+window.addEventListener('popstate', function(event) {
+    if (!backPressedOnce) {
+        // 첫 번째 뒤로가기 누름
+        backPressedOnce = true;
+        
+        // 다시 가짜 히스토리를 밀어넣어서 뒤로 안가게 한 번 더 막음
+        window.history.pushState(null, null, window.location.href);
+
+        // 안드로이드 토스트(안내문) 띄우기
+        const toast = document.createElement('div');
+        toast.innerText = "뒤로가기를 한 번 더 누르면 종료됩니다.";
+        toast.style.cssText = `
+            position: fixed; 
+            bottom: 50px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            background: rgba(0, 0, 0, 0.7); 
+            color: white; 
+            padding: 12px 24px; 
+            border-radius: 20px; 
+            font-size: 14px; 
+            z-index: 9999;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        `;
+        document.body.appendChild(toast);
+        
+        // 2초 뒤에 '한 번 누름' 상태와 토스트 메시지 초기화
+        setTimeout(() => {
+            backPressedOnce = false;
+            if (document.body.contains(toast)) toast.remove();
+        }, 2000);
+
+    } else {
+        // 2초 안에 두 번째 뒤로가기 누름 -> 종료 의사 확인
+        if (confirm("종료(로그아웃) 하시겠습니까?")) {
+            // 확인 시: 데이터 지우고 첫 화면으로
+            localStorage.clear();
+            window.location.href = 'index.html';
+        } else {
+            // 취소 시: 다시 뒤로가기 방어태세 돌입
+            backPressedOnce = false;
+            window.history.pushState(null, null, window.location.href);
+        }
+    }
+});
